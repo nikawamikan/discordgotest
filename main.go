@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"testbot/commands"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
@@ -36,49 +37,8 @@ func init() {
 }
 
 var (
-
-	// コマンドのフロントエンド側の定義
-	commands = []*discordgo.ApplicationCommand{
-		{
-			Name:        "basic-command", // コマンド名
-			Description: "Basic command", // コマンドーの説明
-			Options: []*discordgo.ApplicationCommandOption{ // Optionを追加する
-				{
-					Type:        discordgo.ApplicationCommandOptionString, // オプションの種類
-					Name:        "name",                                   // 名前
-					Description: "String option",                          // オプションの説明
-					Required:    true,                                     // 必須
-				},
-			},
-		},
-	}
-
-	// コマンドの中身定義
-	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
-		"basic-command": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			options := i.ApplicationCommandData().Options
-
-			optionMap := make(map[string]*discordgo.ApplicationCommandInteractionDataOption, len(options))
-			for _, opt := range options {
-				optionMap[opt.Name] = opt
-			}
-
-			var name string
-			msgformat := "test options "
-
-			if option, ok := optionMap["name"]; ok {
-				name = option.StringValue()
-				msgformat += "\nname: %s"
-			}
-
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: fmt.Sprintf(msgformat, name),
-				},
-			})
-		},
-	}
+	commandList     = commands.GetCommands()
+	commandHandlers = commands.GetCommandHandlers()
 )
 
 func init() {
@@ -99,8 +59,8 @@ func main() {
 	}
 
 	fmt.Println("Adding commands...")
-	registeredCommands := make([]*discordgo.ApplicationCommand, len(commands))
-	for i, v := range commands {
+	registeredCommands := make([]*discordgo.ApplicationCommand, len(commandList))
+	for i, v := range commandList {
 		cmd, err := s.ApplicationCommandCreate(s.State.User.ID, GuildID, v)
 		if err != nil {
 			fmt.Printf("Cannot create '%v' command: %v", v.Name, err)
