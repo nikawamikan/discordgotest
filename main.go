@@ -9,6 +9,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// .envファイルで定義します
 var (
 	GuildID        string
 	BotToken       string
