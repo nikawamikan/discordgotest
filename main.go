@@ -1,84 +1,128 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"os/signal"
-	"syscall"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
 )
 
-func getToken() (string, error) {
+var (
+	GuildID        string
+	BotToken       string
+	RemoveCommands bool
+)
+
+var s *discordgo.Session
+
+func init() {
 	err := godotenv.Load(".env")
 
 	if err != nil {
-		fmt.Printf("読み込み出来ませんでした: %v", err)
-		return "str", errors.New("test")
+		fmt.Printf("Dotenv read error: %v", err)
 	}
 
-	token := os.Getenv("TOKEN")
+	GuildID = os.Getenv("GUILDID")
+	BotToken = os.Getenv("TOKEN")
+	RemoveCommands = os.Getenv("REMOVECOMMAND") == "true"
 
-	return token, nil
+	s, err = discordgo.New("Bot " + BotToken)
+	if err != nil {
+		fmt.Printf("Invalid bot parameters: %v", err)
+	}
+}
 
+var (
+
+	// コマンドのフロントエンド側の定義
+	commands = []*discordgo.ApplicationCommand{
+		{
+			Name:        "basic-command", // コマンド名
+			Description: "Basic command", // コマンドーの説明
+			Options: []*discordgo.ApplicationCommandOption{ // Optionを追加する
+				{
+					Type:        discordgo.ApplicationCommandOptionString, // オプションの種類
+					Name:        "name",                                   // 名前
+					Description: "String option",                          // オプションの説明
+					Required:    true,                                     // 必須
+				},
+			},
+		},
+	}
+
+	// コマンドの中身定義
+	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
+		"basic-command": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			options := i.ApplicationCommandData().Options
+
+			optionMap := make(map[string]*discordgo.ApplicationCommandInteractionDataOption, len(options))
+			for _, opt := range options {
+				optionMap[opt.Name] = opt
+			}
+
+			var name string
+			msgformat := "test options "
+
+			if option, ok := optionMap["name"]; ok {
+				name = option.StringValue()
+				msgformat += "\nname: %s"
+			}
+
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: fmt.Sprintf(msgformat, name),
+				},
+			})
+		},
+	}
+)
+
+func init() {
+	s.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+		if h, ok := commandHandlers[i.ApplicationCommandData().Name]; ok {
+			h(s, i)
+		}
+	})
 }
 
 func main() {
-
-	Token, err := getToken()
+	s.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
+		fmt.Printf("fmtged in as: %v#%v", s.State.User.Username, s.State.User.Discriminator)
+	})
+	err := s.Open()
 	if err != nil {
-		return
+		fmt.Printf("Cannot open the session: %v", err)
 	}
 
-	// Create a new Discord session using the provided bot token.
-
-	dg, err := discordgo.New("Bot " + Token)
-	if err != nil {
-		fmt.Println("error creating Discord session,", err)
-		return
+	fmt.Println("Adding commands...")
+	registeredCommands := make([]*discordgo.ApplicationCommand, len(commands))
+	for i, v := range commands {
+		cmd, err := s.ApplicationCommandCreate(s.State.User.ID, GuildID, v)
+		if err != nil {
+			fmt.Printf("Cannot create '%v' command: %v", v.Name, err)
+		}
+		registeredCommands[i] = cmd
 	}
 
-	// Register the messageCreate func as a callback for MessageCreate events.
-	dg.AddHandler(messageCreate)
+	defer s.Close()
 
-	// In this example, we only care about receiving message events.
-	dg.Identify.Intents = discordgo.IntentsGuildMessages
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt)
+	fmt.Println("Press Ctrl+C to exit")
+	<-stop
 
-	// Open a websocket connection to Discord and begin listening.
-	err = dg.Open()
-	if err != nil {
-		fmt.Println("error opening connection,", err)
-		return
+	if RemoveCommands {
+		fmt.Println("Removing commands...")
+		for _, v := range registeredCommands {
+			err := s.ApplicationCommandDelete(s.State.User.ID, GuildID, v.ID)
+			if err != nil {
+				fmt.Printf("Cannot delete '%v' command: %v", v.Name, err)
+			}
+		}
 	}
 
-	// Wait here until CTRL-C or other term signal is received.
-	fmt.Println("Bot is now running.  Press CTRL-C to exit.")
-	sc := make(chan os.Signal, 1)
-	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
-	<-sc
-
-	// Cleanly close down the Discord session.
-	dg.Close()
-}
-
-// This function will be called (due to AddHandler above) every time a new
-// message is created on any channel that the authenticated bot has access to.
-func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
-
-	// Ignore all messages created by the bot itself
-	// This isn't required in this specific example but it's a good practice.
-	if m.Author.ID == s.State.User.ID {
-		return
-	}
-	// If the message is "ping" reply with "Pong!"
-	if m.Content == "ping" {
-		s.ChannelMessageSend(m.ChannelID, "Pong!")
-	}
-
-	// If the message is "pong" reply with "Ping!"
-	if m.Content == "pong" {
-		s.ChannelMessageSend(m.ChannelID, "Ping!")
-	}
+	fmt.Println("Gracefully shutting down.")
 }
