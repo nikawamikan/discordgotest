@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -10,25 +11,26 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// Variables used for command line parameters
-var (
-	Token = getToken()
-)
-
-func getToken() string {
+func getToken() (string, error) {
 	err := godotenv.Load(".env")
 
 	if err != nil {
 		fmt.Printf("読み込み出来ませんでした: %v", err)
+		return "str", errors.New("test")
 	}
 
 	token := os.Getenv("TOKEN")
 
-	return token
+	return token, nil
 
 }
 
 func main() {
+
+	Token, err := getToken()
+	if err != nil {
+		return
+	}
 
 	// Create a new Discord session using the provided bot token.
 
