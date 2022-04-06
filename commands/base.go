@@ -1,5 +1,9 @@
 package commands
 
+/*
+	基本的に同一パッケージではprivateとかそういうのないので、
+	基本的なものの実装をbaseに書く
+*/
 import (
 	"github.com/bwmarrin/discordgo"
 )
@@ -12,10 +16,12 @@ var (
 	commandHandlers = make(map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate), 20)
 )
 
+// なんか頭大文字だと外部参照可になるらしい
 func GetCommands() []*discordgo.ApplicationCommand {
 	return commands
 }
 
+// なんか頭大文字じゃないとだめらしい
 func GetCommandHandlers() map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	return commandHandlers
 }

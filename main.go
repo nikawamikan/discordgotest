@@ -1,5 +1,8 @@
 package main
 
+/*
+	mainにイベントの呼び出しとかを定義
+*/
 import (
 	"fmt"
 	"os"

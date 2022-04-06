@@ -1,5 +1,9 @@
 package commands
 
+/*
+	コマンドの分類ごとにファイルわけする
+*/
+
 import (
 	"fmt"
 
