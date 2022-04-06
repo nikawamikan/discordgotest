@@ -1,16 +1,21 @@
-package commnads
+package commands
 
 import (
 	"github.com/bwmarrin/discordgo"
 )
 
 var (
-	commands = make([]*discordgo.ApplicationCommand, 0, 100)
+	// slashcommandのフロント部分の定義
+	commands = make([]*discordgo.ApplicationCommand, 0, 20)
 
-	// コマンドの中身定義
-	commandHandlers = make(map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate), 100)
+	// slashcommandの内容部分の定義
+	commandHandlers = make(map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate), 20)
 )
 
-func getCommandHandlers() map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+func GetCommands() []*discordgo.ApplicationCommand {
+	return commands
+}
+
+func GetCommandHandlers() map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	return commandHandlers
 }
