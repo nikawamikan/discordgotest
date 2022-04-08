@@ -15,13 +15,12 @@ type commandBase struct {
 }
 
 // コマンドのフロント側の名称をそのまま関数のMapに使用してsetします
-func (c *commandBase) addCommand(com *discordgo.ApplicationCommand, fn func(s *discordgo.Session, i *discordgo.InteractionCreate)) *commandBase {
-	c.commands = append(c.commands, com)
-	c.commandHandlers[com.Name] = fn
-	return c
+func addCommand(command *discordgo.ApplicationCommand, fn func(s *discordgo.Session, i *discordgo.InteractionCreate)) {
+	com.commands = append(com.commands, command)
+	com.commandHandlers[command.Name] = fn
 }
 
-// 空のオブジェクト定義
+// コマンドーのストラクトくん
 var com commandBase
 
 // 空の配列長無駄に100定義してるけど全然たぶん必要ないので考えとく（たぶんそこまでパフォーマンスに影響でないので0でも良いとは思う）

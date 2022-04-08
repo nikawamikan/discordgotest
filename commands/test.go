@@ -10,7 +10,7 @@ import (
 
 func init() {
 	// コマンドの追加
-	com.addCommand(
+	addCommand(
 
 		// コマンド毎の説明とかはこの辺に書いとけばだいたいわかりそう
 		&discordgo.ApplicationCommand{
@@ -25,7 +25,8 @@ func init() {
 				},
 			})
 		},
-	).addCommand( // メソッドチェーン的にすることで多少簡潔に記述可能
+	)
+	addCommand(
 
 		// 2個目
 		&discordgo.ApplicationCommand{
