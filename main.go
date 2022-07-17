@@ -1,8 +1,5 @@
 package main
 
-/*
-	mainにイベントの呼び出しとかを定義
-*/
 import (
 	"fmt"
 	"os"
@@ -26,7 +23,7 @@ func init() {
 	err := godotenv.Load(".env")
 
 	if err != nil {
-		fmt.Printf("Dotenv read error: %v", err)
+		panic(fmt.Sprintf("Dotenv read error: %v", err))
 	}
 
 	GuildID = os.Getenv("GUILDID")
@@ -35,13 +32,13 @@ func init() {
 
 	s, err = discordgo.New("Bot " + BotToken)
 	if err != nil {
-		fmt.Printf("Invalid bot parameters: %v", err)
+		panic(fmt.Sprintf("Invalid bot parameters: %v", err))
 	}
 }
 
 var (
-	commandList     = commands.GetCommands()
-	commandHandlers = commands.GetCommandHandlers()
+	commandList     = commands.Commands
+	commandHandlers = commands.CommandHandlers
 )
 
 func init() {
@@ -58,7 +55,7 @@ func main() {
 	})
 	err := s.Open()
 	if err != nil {
-		fmt.Printf("Cannot open the session: %v", err)
+		panic(fmt.Sprintf("Cannot open the session: %v", err))
 	}
 
 	fmt.Println("Adding commands...")
@@ -66,7 +63,8 @@ func main() {
 	for i, v := range commandList {
 		cmd, err := s.ApplicationCommandCreate(s.State.User.ID, GuildID, v)
 		if err != nil {
-			fmt.Printf("Cannot create '%v' command: %v", v.Name, err)
+			s.Close()
+			panic(fmt.Sprintf("Cannot create '%v' command: %v", v.Name, err))
 		}
 		registeredCommands[i] = cmd
 	}
